@@ -1,8 +1,4 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
-}
+mod renderer;
+mod wgpu;
+
+pub use self::renderer::{create_render_backend, Backend, Renderer};
