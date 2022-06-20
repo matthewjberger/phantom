@@ -14,6 +14,7 @@ use phantom_dependencies::{
         window::{Fullscreen, Icon, WindowBuilder},
     },
 };
+use phantom_render::{create_render_backend, Backend};
 
 #[derive(Error, Debug)]
 pub enum ApplicationError {
@@ -39,6 +40,7 @@ pub struct AppConfig {
     pub is_fullscreen: bool,
     pub title: String,
     pub icon: Option<String>,
+    pub render_backend: Backend,
 }
 
 impl Default for AppConfig {
@@ -49,6 +51,7 @@ impl Default for AppConfig {
             is_fullscreen: false,
             title: "Phantom Editor".to_string(),
             icon: None,
+            render_backend: Backend::Wgpu,
         }
     }
 }
@@ -80,6 +83,8 @@ pub fn run(initial_state: impl State + 'static, config: AppConfig) -> Result<()>
     let physical_size = window.inner_size();
     let window_dimensions = [physical_size.width, physical_size.height];
 
+    let mut renderer = create_render_backend(&config.render_backend, &window, &window_dimensions)?;
+
     let mut gilrs = Gilrs::new().map_err(|_err| anyhow!("Failed to setup gamepad library!"))?;
 
     let mut input = Input::default();
@@ -88,6 +93,7 @@ pub fn run(initial_state: impl State + 'static, config: AppConfig) -> Result<()>
     event_loop.run(move |event, _, control_flow| {
         let resources = Resources {
             window: &mut window,
+            renderer: &mut renderer,
             gilrs: &mut gilrs,
             input: &mut input,
             system: &mut system,
@@ -117,6 +123,8 @@ fn run_loop(
     match event {
         Event::MainEventsCleared => {
             state_machine.update(&mut resources)?;
+
+            resources.renderer.render()?;
         }
 
         Event::WindowEvent {
@@ -141,6 +149,19 @@ fn run_loop(
 
             WindowEvent::DroppedFile(ref path) => {
                 state_machine.on_file_dropped(&mut resources, path)?;
+            }
+
+            WindowEvent::Resized(physical_size) => {
+                resources
+                    .renderer
+                    .resize([physical_size.width, physical_size.height]);
+            }
+
+            WindowEvent::ScaleFactorChanged {
+                ref new_inner_size, ..
+            } => {
+                let size = **new_inner_size;
+                resources.renderer.resize([size.width, size.height]);
             }
 
             _ => {}
