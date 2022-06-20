@@ -49,14 +49,14 @@ impl Gui {
     }
 
     pub fn handle_event(&mut self, event: &Event<()>) {
-        self.platform.handle_event(&event);
+        self.platform.handle_event(event);
     }
 
     pub fn context(&self) -> CtxRef {
         self.platform.context()
     }
 
-    pub fn start_frame<'a>(&mut self, scale_factor: f32) -> FrameData {
+    pub fn start_frame(&mut self, scale_factor: f32) -> FrameData {
         self.platform
             .update_time(self.start_time.elapsed().as_secs_f64());
 

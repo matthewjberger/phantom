@@ -121,7 +121,7 @@ fn run_loop(
         state_machine.start(&mut resources)?;
     }
 
-    resources.gui.handle_event(&event);
+    resources.gui.handle_event(event);
 
     state_machine.handle_event(&mut resources, event)?;
 
@@ -139,7 +139,7 @@ fn run_loop(
 
             state_machine.update_gui(&mut resources)?;
 
-            let paint_jobs = resources.gui.end_frame(&resources.window);
+            let paint_jobs = resources.gui.end_frame(resources.window);
 
             resources
                 .renderer
