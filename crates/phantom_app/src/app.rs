@@ -14,6 +14,7 @@ use phantom_dependencies::{
         window::{Fullscreen, Icon, WindowBuilder},
     },
 };
+use phantom_gui::{Gui, ScreenDescriptor};
 use phantom_render::{create_render_backend, Backend};
 
 #[derive(Error, Debug)]
@@ -87,6 +88,11 @@ pub fn run(initial_state: impl State + 'static, config: AppConfig) -> Result<()>
 
     let mut gilrs = Gilrs::new().map_err(|_err| anyhow!("Failed to setup gamepad library!"))?;
 
+    let mut gui = Gui::new(ScreenDescriptor {
+        dimensions: physical_size,
+        scale_factor: window.scale_factor() as _,
+    });
+
     let mut input = Input::default();
     let mut system = System::new(window_dimensions);
 
@@ -94,6 +100,7 @@ pub fn run(initial_state: impl State + 'static, config: AppConfig) -> Result<()>
         let resources = Resources {
             window: &mut window,
             renderer: &mut renderer,
+            gui: &mut gui,
             gilrs: &mut gilrs,
             input: &mut input,
             system: &mut system,
@@ -114,6 +121,8 @@ fn run_loop(
         state_machine.start(&mut resources)?;
     }
 
+    resources.gui.handle_event(event);
+
     state_machine.handle_event(&mut resources, event)?;
 
     if let Some(event) = resources.gilrs.next_event() {
@@ -124,7 +133,17 @@ fn run_loop(
         Event::MainEventsCleared => {
             state_machine.update(&mut resources)?;
 
-            resources.renderer.render()?;
+            let _frame_data = resources
+                .gui
+                .start_frame(resources.window.scale_factor() as _);
+
+            state_machine.update_gui(&mut resources)?;
+
+            let paint_jobs = resources.gui.end_frame(resources.window);
+
+            resources
+                .renderer
+                .render(&resources.gui.context(), paint_jobs)?;
         }
 
         Event::WindowEvent {

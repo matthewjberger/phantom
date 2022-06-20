@@ -1,6 +1,10 @@
 pub use anyhow;
 pub use bytemuck;
+pub use egui;
+pub use egui_wgpu_backend;
+pub use egui_winit_platform;
 pub use env_logger;
+pub use epi;
 pub use gilrs;
 pub use image;
 pub use log;
