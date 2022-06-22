@@ -9,16 +9,15 @@ informed decisions using up-to-date information.
 
 First, let's add a math library to simplify some of the calculations.
 
-> This will be heavily used when we design our world crate.
+> This will be heavily used when we design our world crate!
 
 ```bash
 cargo add anyhow -p nalgebra_glm
 ```
 
-and export it in `crates/phantom_dependencies/src/lib.rs`:
+Then, export it in `crates/phantom_dependencies/src/lib.rs`:
 
 ```bash
-...
 pub use nalgebra_glm as glm;
 ```
 
