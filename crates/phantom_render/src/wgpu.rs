@@ -22,6 +22,7 @@ pub struct WgpuRenderer {
     depth_texture: Texture,
     gui_renderpass: GuiRenderPass,
     world_render: WorldRender,
+    scale_factor: f64,
 }
 
 impl Renderer for WgpuRenderer {
@@ -53,6 +54,10 @@ impl Renderer for WgpuRenderer {
         }
         Ok(())
     }
+
+    fn set_scale_factor(&mut self, scale_factor: f64) {
+        self.scale_factor = scale_factor;
+    }
 }
 
 impl WgpuRenderer {
@@ -60,13 +65,14 @@ impl WgpuRenderer {
         wgpu::util::backend_bits_from_env().unwrap_or_else(wgpu::Backends::all)
     }
 
-    pub fn new(window_handle: &impl HasRawWindowHandle, dimensions: &[u32; 2]) -> Result<Self> {
-        pollster::block_on(WgpuRenderer::new_async(window_handle, dimensions))
+    pub fn new(window_handle: &impl HasRawWindowHandle, dimensions: &[u32; 2], scale_factor: f64) -> Result<Self> {
+        pollster::block_on(WgpuRenderer::new_async(window_handle, dimensions, scale_factor))
     }
 
     async fn new_async(
         window_handle: &impl HasRawWindowHandle,
         dimensions: &[u32; 2],
+        scale_factor: f64,
     ) -> Result<Self> {
         let instance = wgpu::Instance::new(Self::backends());
 
@@ -106,6 +112,7 @@ impl WgpuRenderer {
             depth_texture,
             gui_renderpass,
             world_render,
+            scale_factor
         })
     }
 
@@ -168,7 +175,7 @@ impl WgpuRenderer {
         let screen_descriptor = ScreenDescriptor {
             physical_width: self.config.width,
             physical_height: self.config.height,
-            scale_factor: 1.0, // TODO: Store the scale factor in the renderer and update it when winit reports that the scale factor has changed
+            scale_factor: self.scale_factor as _,
         };
 
         self.gui_renderpass

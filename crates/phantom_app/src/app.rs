@@ -83,14 +83,15 @@ pub fn run(initial_state: impl State + 'static, config: AppConfig) -> Result<()>
 
     let physical_size = window.inner_size();
     let window_dimensions = [physical_size.width, physical_size.height];
+    let scale_factor = window.scale_factor();
 
-    let mut renderer = create_render_backend(&config.render_backend, &window, &window_dimensions)?;
+    let mut renderer = create_render_backend(&config.render_backend, &window, &window_dimensions, scale_factor)?;
 
     let mut gilrs = Gilrs::new().map_err(|_err| anyhow!("Failed to setup gamepad library!"))?;
 
     let mut gui = Gui::new(ScreenDescriptor {
         dimensions: physical_size,
-        scale_factor: window.scale_factor() as _,
+        scale_factor: scale_factor as _,
     });
 
     let mut input = Input::default();
@@ -177,9 +178,11 @@ fn run_loop(
             }
 
             WindowEvent::ScaleFactorChanged {
+                ref scale_factor,
                 ref new_inner_size, ..
             } => {
                 let size = **new_inner_size;
+                resources.renderer.set_scale_factor(*scale_factor);
                 resources.renderer.resize([size.width, size.height]);
             }
 
