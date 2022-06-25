@@ -11,6 +11,8 @@
   * [Tracking Input](tracking-input.md)
   * [Gamepads](gamepads.md)
 
+* [Rendering](rendering.md)
+
 * [Appendix](appendix.md)
   * [A - Further Reading](appendix-further-reading.md)
   * [B - Keywords](appendix-keywords.md)
