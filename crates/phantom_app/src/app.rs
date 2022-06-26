@@ -85,7 +85,12 @@ pub fn run(initial_state: impl State + 'static, config: AppConfig) -> Result<()>
     let window_dimensions = [physical_size.width, physical_size.height];
     let scale_factor = window.scale_factor();
 
-    let mut renderer = create_render_backend(&config.render_backend, &window, &window_dimensions, scale_factor)?;
+    let mut renderer = create_render_backend(
+        &config.render_backend,
+        &window,
+        &window_dimensions,
+        scale_factor,
+    )?;
 
     let mut gilrs = Gilrs::new().map_err(|_err| anyhow!("Failed to setup gamepad library!"))?;
 
@@ -118,11 +123,17 @@ fn run_loop(
     control_flow: &mut ControlFlow,
     mut resources: Resources,
 ) -> Result<()> {
+    *control_flow = ControlFlow::Poll;
+
     if !state_machine.is_running() {
         state_machine.start(&mut resources)?;
     }
 
     resources.gui.handle_event(event);
+    resources.system.handle_event(event);
+    resources
+        .input
+        .handle_event(event, resources.system.window_center());
 
     state_machine.handle_event(&mut resources, event)?;
 
@@ -142,9 +153,11 @@ fn run_loop(
 
             let paint_jobs = resources.gui.end_frame(resources.window);
 
-            resources
-                .renderer
-                .render(&resources.gui.context(), paint_jobs)?;
+            resources.renderer.render(
+                state_machine.world()?,
+                &resources.gui.context(),
+                paint_jobs,
+            )?;
         }
 
         Event::WindowEvent {
@@ -179,7 +192,8 @@ fn run_loop(
 
             WindowEvent::ScaleFactorChanged {
                 ref scale_factor,
-                ref new_inner_size, ..
+                ref new_inner_size,
+                ..
             } => {
                 let size = **new_inner_size;
                 resources.renderer.set_scale_factor(*scale_factor);

@@ -6,7 +6,7 @@ use crate::{
 use phantom_dependencies::{
     anyhow::{bail, Context, Result},
     bmfont::{BMFont, OrdinateOrientation},
-    glm,
+    bytemuck, glm,
     legion::{EntityStore, IntoQuery},
     nalgebra::{Point, Point3},
     petgraph::prelude::*,
@@ -50,7 +50,7 @@ impl World {
         Ok(())
     }
 
-    fn add_default_camera(&mut self) -> Result<()> {
+    pub fn add_default_camera(&mut self) -> Result<()> {
         let position = glm::vec3(0.0, 0.0, 10.0);
         let mut transform = Transform {
             translation: position,
@@ -791,7 +791,8 @@ impl Geometry {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, bytemuck::Pod, bytemuck::Zeroable)]
 #[serde(crate = "phantom_dependencies::serde")]
 pub struct Vertex {
     pub position: glm::Vec3,

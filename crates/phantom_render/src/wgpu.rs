@@ -1,6 +1,8 @@
 mod texture;
+mod uniform;
 mod world;
 
+use self::texture::Texture;
 use crate::renderer::Renderer;
 use phantom_dependencies::{
     anyhow::{Context, Result},
@@ -10,7 +12,7 @@ use phantom_dependencies::{
     raw_window_handle::HasRawWindowHandle,
     wgpu::{self, Device, Queue, Surface, SurfaceConfiguration, TextureViewDescriptor},
 };
-use texture::Texture;
+use phantom_world::World;
 use world::WorldRender;
 
 pub struct WgpuRenderer {
@@ -42,8 +44,13 @@ impl Renderer for WgpuRenderer {
         );
     }
 
-    fn render(&mut self, gui_context: &GuiContext, paint_jobs: Vec<ClippedMesh>) -> Result<()> {
-        match self.render_frame(gui_context, paint_jobs) {
+    fn render(
+        &mut self,
+        world: Option<&mut World>,
+        gui_context: &GuiContext,
+        paint_jobs: Vec<ClippedMesh>,
+    ) -> Result<()> {
+        match self.render_frame(world, gui_context, paint_jobs) {
             Ok(_) => {}
             // Recreate the swapchain if lost
             Err(wgpu::SurfaceError::Lost) => self.resize(self.dimensions),
@@ -58,6 +65,10 @@ impl Renderer for WgpuRenderer {
     fn set_scale_factor(&mut self, scale_factor: f64) {
         self.scale_factor = scale_factor;
     }
+
+    fn load_world(&mut self, world: &phantom_world::World) -> Result<()> {
+        self.world_render.load(&self.device, &self.queue, world)
+    }
 }
 
 impl WgpuRenderer {
@@ -65,8 +76,16 @@ impl WgpuRenderer {
         wgpu::util::backend_bits_from_env().unwrap_or_else(wgpu::Backends::all)
     }
 
-    pub fn new(window_handle: &impl HasRawWindowHandle, dimensions: &[u32; 2], scale_factor: f64) -> Result<Self> {
-        pollster::block_on(WgpuRenderer::new_async(window_handle, dimensions, scale_factor))
+    pub fn new(
+        window_handle: &impl HasRawWindowHandle,
+        dimensions: &[u32; 2],
+        scale_factor: f64,
+    ) -> Result<Self> {
+        pollster::block_on(WgpuRenderer::new_async(
+            window_handle,
+            dimensions,
+            scale_factor,
+        ))
     }
 
     async fn new_async(
@@ -101,7 +120,7 @@ impl WgpuRenderer {
 
         let gui_renderpass = GuiRenderPass::new(&device, config.format, 1);
 
-        let world_render = WorldRender::new(&device, &config)?;
+        let world_render = WorldRender::new(&device, config.format)?;
 
         Ok(Self {
             surface,
@@ -112,7 +131,7 @@ impl WgpuRenderer {
             depth_texture,
             gui_renderpass,
             world_render,
-            scale_factor
+            scale_factor,
         })
     }
 
@@ -163,9 +182,17 @@ impl WgpuRenderer {
 
     fn render_frame(
         &mut self,
+        world: Option<&mut World>,
         gui_context: &GuiContext,
         paint_jobs: Vec<ClippedMesh>,
     ) -> Result<(), wgpu::SurfaceError> {
+        let height = if self.dimensions[1] > 0 {
+            self.dimensions[1] as f32
+        } else {
+            1.0
+        };
+        let aspect_ratio = self.dimensions[0] as f32 / height as f32;
+
         let surface_texture = self.surface.get_current_texture()?;
 
         let view = surface_texture
@@ -214,12 +241,25 @@ impl WgpuRenderer {
                         store: true,
                     },
                 }],
-                depth_stencil_attachment: None,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.depth_texture.view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: true,
+                    }),
+                    stencil_ops: None,
+                }),
             });
 
-            self.world_render
-                .render(&mut render_pass)
-                .expect("Failed to render frame!");
+            if let Some(world) = world {
+                self.world_render
+                    .update(&self.queue, world, aspect_ratio)
+                    .expect("Failed to render frame!");
+
+                self.world_render
+                    .render(&mut render_pass, world)
+                    .expect("Failed to render frame!");
+            }
         }
 
         encoder.insert_debug_marker("Render Gui");

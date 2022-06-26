@@ -3,7 +3,12 @@ mod system;
 
 pub use self::{input::*, system::*};
 
-use phantom_dependencies::{gilrs::Gilrs, winit::window::Window};
+use phantom_dependencies::{
+    anyhow::Result,
+    gilrs::Gilrs,
+    glm,
+    winit::{dpi::PhysicalPosition, window::Window},
+};
 use phantom_gui::Gui;
 use phantom_render::Renderer;
 
@@ -19,5 +24,19 @@ pub struct Resources<'a> {
 impl<'a> Resources<'a> {
     pub fn set_cursor_visible(&mut self, visible: bool) {
         self.window.set_cursor_visible(visible)
+    }
+
+    pub fn set_cursor_grab(&mut self, grab: bool) -> Result<()> {
+        Ok(self.window.set_cursor_grab(grab)?)
+    }
+
+    pub fn center_cursor(&mut self) -> Result<()> {
+        Ok(self.set_cursor_position(&self.system.window_center())?)
+    }
+
+    pub fn set_cursor_position(&mut self, position: &glm::Vec2) -> Result<()> {
+        Ok(self
+            .window
+            .set_cursor_position(PhysicalPosition::new(position.x, position.y))?)
     }
 }

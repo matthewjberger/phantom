@@ -4,6 +4,7 @@ use phantom_dependencies::{
     gilrs::Event as GilrsEvent,
     winit::event::{ElementState, Event, KeyboardInput, MouseButton},
 };
+use phantom_world::World;
 use std::path::Path;
 
 pub struct EmptyState {}
@@ -12,6 +13,10 @@ impl State for EmptyState {}
 pub trait State {
     fn label(&self) -> String {
         "Unlabeled Game State".to_string()
+    }
+
+    fn world(&mut self) -> Result<Option<&mut World>> {
+        Ok(None)
     }
 
     fn on_start(&mut self, _resources: &mut Resources) -> Result<()> {
@@ -87,6 +92,10 @@ impl StateMachine {
             running: false,
             states: vec![Box::new(initial_state)],
         }
+    }
+
+    pub fn world(&mut self) -> Result<Option<&mut World>> {
+        self.active_state_mut()?.world()
     }
 
     pub fn active_state_label(&self) -> Option<String> {

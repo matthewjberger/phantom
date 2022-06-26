@@ -1,5 +1,5 @@
 use phantom::{
-    app::{run, AppConfig, Resources, State, Transition},
+    app::{run, AppConfig, MouseOrbit, Resources, State, Transition},
     dependencies::{
         anyhow::{Context, Result},
         egui::{global_dark_light_mode_switch, menu, SidePanel, TopBottomPanel},
@@ -7,19 +7,36 @@ use phantom::{
         log,
         winit::event::{ElementState, Event, KeyboardInput, MouseButton},
     },
+    world::{load_gltf, World},
 };
 
-#[derive(Default)]
-pub struct Editor;
+pub struct Editor {
+    camera: MouseOrbit,
+    world: World,
+}
+
+impl Editor {
+    pub fn new() -> Result<Self> {
+        Ok(Self {
+            camera: MouseOrbit::default(),
+            world: World::new()?,
+        })
+    }
+}
 
 impl State for Editor {
     fn label(&self) -> String {
         "Phantom Editor - Main".to_string()
     }
 
-    fn on_start(&mut self, _resources: &mut Resources) -> Result<()> {
+    fn world(&mut self) -> Result<Option<&mut World>> {
+        Ok(Some(&mut self.world))
+    }
+
+    fn on_start(&mut self, resources: &mut Resources) -> Result<()> {
         log::info!("Starting the Phantom editor");
-        Ok(())
+        load_gltf("assets/models/arena.glb", &mut self.world)?;
+        resources.renderer.load_world(&self.world)
     }
 
     fn on_stop(&mut self, _resources: &mut Resources) -> Result<()> {
@@ -37,7 +54,12 @@ impl State for Editor {
         Ok(())
     }
 
-    fn update(&mut self, _resources: &mut Resources) -> Result<Transition> {
+    fn update(&mut self, resources: &mut Resources) -> Result<Transition> {
+        if self.world.active_camera_is_main()? {
+            let camera_entity = self.world.active_camera()?;
+            self.camera
+                .update(&mut self.world, resources, camera_entity)?;
+        }
         Ok(Transition::None)
     }
 
@@ -122,7 +144,7 @@ impl State for Editor {
 
 fn main() -> Result<()> {
     Ok(run(
-        Editor::default(),
+        Editor::new()?,
         AppConfig {
             icon: Some("assets/icons/phantom.png".to_string()),
             ..Default::default()

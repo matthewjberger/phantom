@@ -34,6 +34,7 @@ impl Texture {
     }
 
     pub fn map_format(image: &DynamicImage) -> Result<Format> {
+        // TODO: Convert 24bit format to 32bit by adding an alpha channel
         Ok(match image {
             DynamicImage::ImageRgb8(_) => Format::R8G8B8,
             DynamicImage::ImageRgba8(_) => Format::R8G8B8A8,
@@ -64,6 +65,35 @@ impl Texture {
             height,
             sampler: Sampler::default(),
         })
+    }
+
+    pub fn padded_bytes_per_row(&self, alignment: u32) -> u32 {
+        let bytes_per_row = self.bytes_per_row();
+        let padding = (alignment - bytes_per_row % alignment) % alignment;
+        bytes_per_row + padding
+    }
+
+    pub fn bytes_per_row(&self) -> u32 {
+        self.bytes_per_pixel() * self.width
+    }
+
+    pub fn bytes_per_pixel(&self) -> u32 {
+        match self.format {
+            Format::R8 => 1,
+            Format::R8G8 => 2,
+            Format::R8G8B8 | Format::B8G8R8 => 3,
+            Format::R8G8B8A8 | Format::B8G8R8A8 => 4,
+
+            Format::R16 | Format::R16F => 2,
+            Format::R16G16 | Format::R16G16F => 4,
+            Format::R16G16B16 | Format::R16G16B16F => 6,
+            Format::R16G16B16A16 | Format::R16G16B16A16F => 8,
+
+            Format::R32 | Format::R32F => 4,
+            Format::R32G32 | Format::R32G32F => 8,
+            Format::R32G32B32 | Format::R32G32B32F => 12,
+            Format::R32G32B32A32 | Format::R32G32B32A32F => 16,
+        }
     }
 }
 

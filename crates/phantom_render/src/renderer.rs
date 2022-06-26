@@ -4,6 +4,7 @@ use phantom_dependencies::{
     egui::{ClippedMesh, Context},
     raw_window_handle::HasRawWindowHandle,
 };
+use phantom_world::World;
 
 pub enum Backend {
     Wgpu,
@@ -11,8 +12,14 @@ pub enum Backend {
 
 pub trait Renderer {
     fn resize(&mut self, dimensions: [u32; 2]);
-    fn render(&mut self, gui_context: &Context, paint_jobs: Vec<ClippedMesh>) -> Result<()>;
+    fn render(
+        &mut self,
+        world: Option<&mut World>,
+        gui_context: &Context,
+        paint_jobs: Vec<ClippedMesh>,
+    ) -> Result<()>;
     fn set_scale_factor(&mut self, scale_factor: f64);
+    fn load_world(&mut self, world: &World) -> Result<()>;
 }
 
 pub fn create_render_backend(
