@@ -5,18 +5,27 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.57"
+bincode = "1.3.3"
+bmfont = { version = "0.3.3", features = ["serde"] }
+bytemuck = "1.9.1"
+egui = "0.15.0"
+egui_wgpu_backend = "0.15.0"
+egui_winit_platform = "0.12.0"
 env_logger = "0.9.0"
+epi = "0.17.0"
 gilrs = "0.9.0"
+gltf = { version = "1.0.0", features = ["names", "KHR_lights_punctual", "KHR_materials_unlit"] }
 image = "0.24.2"
+lazy_static = "1.4.0"
+legion = "0.4.0"
 log = "0.4.17"
-nalgebra-glm = "0.17.0"
-thiserror = "1.0.31"
+nalgebra = "0.31.0"
+nalgebra-glm = { version = "0.17.0", features = ["serde-serialize"] }
+petgraph = { version = "0.6.0", features = ["serde-1"] }
+pollster = "0.2.5"
+rapier3d = { version = "0.13.0", features = ["serde-serialize"] }
 raw-window-handle = "0.4.2"
+serde = "1.0.133"
+thiserror = "1.0.31"
 wgpu = "0.12.0"
 winit = "0.26.1"
-bytemuck = "1.9.1"
-pollster = "0.2.5"
-egui = "0.15.0"
-egui_winit_platform = "0.12.0"
-epi = "0.17.0"
-egui_wgpu_backend = "0.15.0"
